@@ -66,6 +66,7 @@ if __name__ == '__main__':
                  start_date = start_date)
 
 
+    # ===============================================================================
     # 부모객체에서 만들어주는 dataframe들을 참고하려면 아래 프린트문을 활성화 해보도록
     print(stock.df_snd_previous_period.tail(3))
     # print(stock.df_snd_last_day)
@@ -73,11 +74,13 @@ if __name__ == '__main__':
     # print(stock.df_min_last_few_days)
     # print(stock.df_bb_desc)
     # print(stock.df_bb_recent_event_elapsed_days)
+    # ===============================================================================
+
+
 
     ret = stock.my_function()
-
     print('='*100)
 
     result = stock.is_last_trading_day_p5_positive(threshold=0)
-    print(F'P5는 0보다 큽니까? {result}')
+    print(F'\n\n그래서, P5는 0보다 큽니까? {result}')
 

@@ -71,6 +71,8 @@ class stock_markdown:
         self.df_min_the_day = self.get_min_the_day(self.stockcode, self.the_date)
         self.df_snd_last_day, self.df_snd_previous_period = self.get_snd_previous(self.stockcode, self.start_date, self.prev_date)
         self.df_future = self.get_future(self.stockcode, self.the_date)
+
+        self.get_smar()
         self.get_snd_cumsum(self.stockcode, self.start_date, self.prev_date)
         self.get_bb_description(verbose=False)
         self.get_bb_event_interval()
@@ -101,7 +103,7 @@ class stock_markdown:
     def get_snd_previous(self, stockcode, start_date, prev_date):
 
         df_snd_previous = db.selectpd(f'''
-        SELECT DATE, C.OPEN, C.HIGH, C.LOW, C.CLOSE,
+        SELECT DATE, C.OPEN, C.HIGH, C.LOW, C.CLOSE, F.VOLUME,
                 MA5, MA20, MA60, MA120, VMA5, VMA20, VMA60, VMA120, 
                 BBU, BBL, BBP, BBW,
                 P1, P5, P20, P60, P120,
@@ -114,6 +116,7 @@ class stock_markdown:
         JOIN jazzdb.T_STOCK_OHLC_DAY C USING (STOCKCODE, DATE)
         JOIN jazzdb.T_STOCK_BB D USING (STOCKCODE, DATE)
         JOIN jazzdb.T_STOCK_MA E USING (STOCKCODE, DATE)
+        JOIN jazzdb.T_STOCK_SND_DAY F USING (STOCKCODE, DATE)
         WHERE 1=1
         AND STOCKCODE = "{stockcode}" 
         AND DATE BETWEEN "{start_date}" AND "{prev_date}"
@@ -121,13 +124,31 @@ class stock_markdown:
 
         df_snd_last_day = df_snd_previous.tail(1)
         df_snd_previous_period = df_snd_previous[['DATE',
-                                                  'OPEN', 'HIGH', 'LOW', 'CLOSE',
+                                                  'OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOLUME',
+                                                  'P1', 'P5', 'P20', 'P60', 'P120',
+                                                  'I1', 'I5', 'I20', 'I60', 'I120',
+                                                  'F1', 'F5', 'F20', 'F60', 'F120',
                                                   'MA5', 'MA20', 'MA60', 'MA120',
                                                   'VMA5', 'VMA20', 'VMA60', 'VMA120',
                                                   'BBU', 'BBL', 'BBP', 'BBW',
                                                   'IR', 'FR']]
 
         return df_snd_last_day, df_snd_previous_period
+
+    def get_smar(self, windows =[5,20,60,120]):
+
+        # df_snd_previous_period 에 5, 20일의 PSMAR, VSMAR을 추가생성해줌
+        for window in windows:
+                # opdf['PSMAR' + str(each)] = (opdf['CLOSE'] - opdf['CLOSE'].rolling(each).mean()) / opdf[
+                #     'CLOSE'].rolling(each).mean()
+
+            self.df_snd_previous_period['VSMAR'+str(window)] =  (self.df_snd_previous_period['CLOSE'] - self.df_snd_previous_period['MA'+ str(window)]) / self.df_snd_previous_period['MA'+ str(window)]
+            self.df_snd_previous_period['PSMAR'+str(window)] =  (self.df_snd_previous_period['VOLUME'] - self.df_snd_previous_period['VMA'+ str(window)]) / self.df_snd_previous_period['VMA'+ str(window)]
+
+            self.df_snd_last_day = self.df_snd_previous_period.tail(1)
+
+
+
 
     def get_snd_cumsum(self, stockcode, start_date, prev_date):
 
